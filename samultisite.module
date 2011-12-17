@@ -1,0 +1,197 @@
+<?php
+/**/
+function samultisite_status($status = 0){
+  $samultisite_statuses = array('Inactive','Active');
+  return array('value'=>$status,'view'=>$samultisite_statuses[$status]);
+}
+function samultisite_menu(){
+  $items = array();
+  $items['admin/samultisite'] = array(
+    'title' => 'SAMultiSite',
+	'description' => 'SAMultiSite lets you manage multiple website from single admin.',
+    'access arguments' => array('administer multiple sites'),
+    'page callback' => 'samultisite_admin',
+  );
+  $items['admin/samultisite/sites'] = array(
+    'title' => 'List',
+    'description' => 'Manage a list of all the sites connected.',
+    'access arguments' => array('administer multiple sites'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/samultisite/add'] = array(
+    'title' => 'Add site',
+    'description' => 'Add a new site.',
+    'page arguments' => array('add'),
+    'access arguments' => array('administer multiple sites'),
+    'type' => MENU_LOCAL_ACTION,
+  );
+  $items['admin/samultisite/settings'] = array(
+    'title' => 'SAMultiSites Settings',
+    'description' => 'Various settings for SAMultiSites.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('samultisite_admin_settings'),
+    'access arguments' => array('administer multiple sites'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+function samultisite_permission(){
+  return array(
+    'administer multiple sites' => array(
+      'title' => t('Administer multiple sites'),
+      'description' => t('Allow administration of multiple remote sites.'),
+    ),
+    'view multiple sites data' => array(
+      'title' => t('View remote site data'),
+      'description' => t('Allow viewing remote site data.'),
+    ),
+    'edit multiple sites data' => array(
+      'title' => t('Edit remote site data'),
+      'description' => t('Allow editing remote site data.'),
+    ),
+  );
+}
+function samultisite_admin($arg = null) {
+  $op = isset($_POST['op']) ? $_POST['op'] : $arg;
+  switch ($op){
+    case 'Save':
+      return samultisite_add_form_submit();
+	  break;
+    case 'add':
+	  return drupal_get_form("samultisite_add_form");
+	  break;
+    case 'edit':
+	  return drupal_get_form("samultisite_add_form");
+	  break;
+    case 'delete':
+	  return drupal_get_form("samultisite_delete_form");
+	  break;
+	case 'Delete':
+	  return samultisite_delete_form_submit();
+	  break;
+	default:
+	  return drupal_get_form("samultisite_list");
+	  break;
+  }
+}
+function samultisite_load_site($sasid){
+  $query = db_select('samultisite_sites', 'site');
+  $query->condition('site.sasid', $sasid, '=')
+        ->fields('site *')
+		;
+  $result = $query->execute()->fetchObject();
+  return $result;
+}
+function samultisite_list(){
+global $base_url;
+  $header = array(
+    'sasid' => array('data' => t('Id'), 'field' => 'site.sasid'),
+    'name' => array('data' => t('Name'), 'field' => 'site.name'),
+    'prefix' => array('data' => t('Prefix'), 'field' => 'site.prefix'),
+    'status' => array('data' => t('Status'), 'field' => 'site.status'),
+	'actions' => array('data' => t('Actions')),
+  );
+  $query = db_select('samultisite_sites', 'site');
+  $count_query = clone $query;
+  $count_query->addExpression('COUNT(site.sasid)');
+
+  $query = $query->extend('PagerDefault')->extend('TableSort');
+  $query
+    ->fields('site', array('sasid','name','prefix','description','status'))
+    ->limit(50)
+    ->orderByHeader($header)
+    ->setCountQuery($count_query);
+  $result = $query->execute();
+  $options = array();
+  foreach ($result as $site){
+    $status = samultisite_status($site->status);
+    $options[$site->sasid] = array(
+	  'sasid' => $site->sasid,
+      'name' => $site->name,
+      'prefix' => $site->prefix,
+      'status' =>  $status['view'],
+	  'actions' => '<a href="'.$base_url.'/admin/samultisite/manage/'.$site->sasid.'" title="Manage '.$site->name.'">Control Panel</a>, <a href="'.$base_url.'/admin/samultisite/edit/'.$site->sasid.'" title="Edit '.$site->name.'/'.$site->name.'">Edit</a>, <a href="'.$base_url.'/admin/samultisite/delete/'.$site->sasid.'/'.$site->name.'" title="Delete '.$site->name.'">Delete</a>',
+    );
+  }
+  $form['sites'] = array(
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => $options,
+    '#empty' => t('No sites added. Please <a href="'.$base_url.'/admin/samultisite/add">add new</a> site.'),
+  );
+  $form['pager'] = array('#markup' => theme('pager'));
+
+  return $form;
+}
+function samultisite_admin_settings($form, $form_state, $sasid = NULL) {
+  return $form;
+}
+function samultisite_delete_form($form, $form_state, $sasid = NULL){
+  $form['sasid'] = array(
+    '#type' => 'hidden', 
+	'#value' => arg(3),
+  );
+  $form['text'] = array('#markup'=>"<div>Are you sure you want to delete site ".arg(4).".</div>");
+  $form['submit'] = array(
+    '#type' => 'submit',
+	'#value' => 'Delete',
+  );
+  return $form;
+}
+function samultisite_add_form($form, $form_state, $sasid = NULL){
+  $sasid = arg(3);
+  if (isset($sasid)){
+  	$site = samultisite_load_site($sasid);
+  }
+  $form['name'] = array(
+    '#type' => 'textfield', 
+	'#title' => t('Remote site name'),
+	'#maxlength' => 45,
+  );
+  $form['prefix'] = array(
+    '#type' => 'textfield', 
+	'#title' => t('Table prefix for remote site'),
+	'#maxlength' => 45,
+  );
+  $form['description'] = array(
+    '#type' => 'textarea', 
+	'#title' => t('Description'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+	'#value' => 'Save',
+  );
+  return $form;
+}
+function samultisite_add_form_submit(){
+  if ($_POST['name']==''){ form_set_error('name', t('Please enter a valid site name.')); return drupal_get_form('samultisite_add_form');}
+  else if (strlen($_POST['name'])>44){ form_set_error('name', t('Site name can not be more than 45 characters.')); return drupal_get_form('samultisite_add_form');}
+  else if ($_POST['prefix']==''){ form_set_error('prefix', t('Please enter a table prefix for remote site.')); return drupal_get_form('samultisite_add_form');}
+  else { 
+    $sasid = db_insert('samultisite_sites')
+    ->fields(array('name', 'prefix', 'description','status'))
+    ->values(array(
+      'name' => $_POST['name'],
+      'prefix' => $_POST['prefix'],
+      'description' => $_POST['description'],
+	  'status' => 1,
+    ))
+    ->execute();
+	drupal_set_message("Site added.");
+	drupal_goto('admin/samultisite');
+	return "Site saved."; }
+}
+function samultisite_delete_form_submit(){
+  $sasid = db_delete('samultisite_sites')
+  ->condition('sasid', (int)$_POST['sasid'])
+  ->execute();
+  if ($sasid) {
+    $msg = "Site removed.";
+  } else {
+    $msg = "Site could not be removed.";
+  }
+  drupal_set_message($msg);
+  drupal_goto('admin/samultisite');
+}
+/**/

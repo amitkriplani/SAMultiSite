@@ -1,0 +1,4 @@
+name = SAMultiSite
+description = Single Admin Multuple webSite (Single DB version). A module to manage all sites hosted on a single hosting and using common database separated by table prefixes.
+core = 7.x
+package = SAMultiSites

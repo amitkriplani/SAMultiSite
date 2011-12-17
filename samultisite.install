@@ -1,0 +1,60 @@
+<?php
+/*
+ * sql schema
+ * CREATE TABLE IF NOT EXISTS `samultisite_sites` (
+ * `sasid` int(11) NOT NULL auto_increment,
+ * `name` varchar(45) collate utf8_unicode_ci NOT NULL,
+ * `prefix` varchar(45) collate utf8_unicode_ci NOT NULL,
+ * `description` text collate utf8_unicode_ci,
+ * `status` int(11) NOT NULL,
+ * PRIMARY KEY  (`sasid`),
+ * UNIQUE KEY `prefix_UNIQUE` (`prefix`),
+ * KEY `name_INDEX` (`name`)
+ * ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Single admin, multiple sites single db version. Table for st' AUTO_INCREMENT=1 ;
+ */
+
+
+/*
+ * implementation of hook_schema
+ */
+function samultisite_schema(){
+
+  $schema['samultisite_sites'] = array(
+	'description' => 'Single admin, multiple sites single db version.',
+    'fields' => array(
+      'sasid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+		'description' => "Stores index of the site",
+      ),
+	  'name' => array(
+	    'type' => 'varchar',
+	    'length' => '45',
+        'not null' => TRUE,
+		'description' => "Name of the site",
+	  ),
+	  'prefix' => array(
+	    'type' => 'varchar',
+	    'length' => '45',
+        'not null' => TRUE,
+		'description' => "Table prefix of the site",
+	  ),
+	  'description' => array(
+	    'type' => 'text',
+	    'size' => 'big',
+		'description' => "A short description of the site",
+	  ),
+      'status' => array(
+        'type' => 'int',
+        'length' => '2',
+        'not null' => TRUE,
+		'description' => "Status of the site",
+      ),
+    ),
+    'primary key' => array('sasid'),
+	'unique' => array('prefix'),
+	'index' => array('name'),
+  );
+
+  return $schema;
+}
