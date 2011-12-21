@@ -44,7 +44,7 @@ function samultisite_menu(){
   return $items;
 }
 function samultisite_manage_site(){
-  global $databases;
+  global $databases, $base_url;
   if (arg(4)){
     $query = db_select('samultisite_sites','site');
     $query->condition('site.sasid', arg(3), '=')
