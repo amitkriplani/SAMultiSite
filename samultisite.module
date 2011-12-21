@@ -44,12 +44,22 @@ function samultisite_menu(){
   return $items;
 }
 function samultisite_manage_site(){
+  global $databases;
   if (arg(4)){
     $query = db_select('samultisite_sites','site');
     $query->condition('site.sasid', arg(3), '=')
-    	  ->fields('site prefix');
+    	  ->fields('site');
     $result = @$query->execute()->fetchAssoc();
-  	return $result['prefix'];
+	drupal_set_title($result['name']." control panel");
+	$path = str_replace("admin/samultisite/manage/".arg(3)."/","",$_GET['q']);
+    $item = menu_get_item($path);
+	$func = $item['page_callback'];
+	$args = implode(",",$item['page_arguments']);
+	if (isset($item['include_file']) && $item['include_file'] != "") include_once($item['include_file']);
+	$databases['default']['default']['prefix'] = $result['prefix'];
+	Database::closeConnection();
+	Database::parseConnectionInfo();
+	return  $func($args);
   }
   if (!arg(3)){
 	drupal_set_message("The site can not be found.");
@@ -60,6 +70,7 @@ function samultisite_manage_site(){
     	->fields('site *')
 		;
   $result = @$query->execute()->fetchObject();
+  drupal_set_title($result->name." control panel");
   if (is_object($result) && $result->sasid != arg(3)){
   	drupal_set_message("The site can not be found.");
 	drupal_goto("admin/samultisite");

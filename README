@@ -10,6 +10,7 @@ By = Amit Kriplani
 At = A1Brains Infotech
 
 Updates:
+	21 December 2011: Any options select in the control panel now display remote data.
 	20 December 2011: The site control panel is now showing dashboard for the selected site.
 	18 December 2011: Created project page on my blog at http://blog.amitkriplani.com/p/samultisite.html
 	16 December 2011: Created add, edit and delete functions for managing sub sites. Pushed to Github. The repo is up to date.
