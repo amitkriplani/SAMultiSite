@@ -34,7 +34,47 @@ function samultisite_menu(){
     'access arguments' => array('administer multiple sites'),
     'type' => MENU_LOCAL_TASK,
   );
+  $items['admin/samultisite/manage/%'] = array(
+    'title' => 'Remote site control panel',
+    'description' => 'Manage the site.',
+    'page callback' => 'samultisite_manage_site',
+    'access arguments' => array('administer multiple sites'),
+    'type' => MENU_CALLBACK,
+  );  
   return $items;
+}
+function samultisite_manage_site(){
+  if (arg(4)){
+    $query = db_select('samultisite_sites','site');
+    $query->condition('site.sasid', arg(3), '=')
+    	  ->fields('site prefix');
+    $result = @$query->execute()->fetchAssoc();
+  	return $result['prefix'];
+  }
+  if (!arg(3)){
+	drupal_set_message("The site can not be found.");
+	drupal_goto("admin/samultisite");
+  }
+  $query = db_select('samultisite_sites', 'site');
+  $query->condition('site.sasid', arg(3), '=')
+    	->fields('site *')
+		;
+  $result = @$query->execute()->fetchObject();
+  if (is_object($result) && $result->sasid != arg(3)){
+  	drupal_set_message("The site can not be found.");
+	drupal_goto("admin/samultisite");
+  }
+  $item = menu_get_item('admin');
+  if ($content = system_admin_menu_block($item)) {
+  	foreach ($content as &$value){
+	  $value['href'] = $_GET['q']."/".$value['href'];
+	}
+    $output = theme('admin_block_content', array('content' => $content));
+  }
+  else {
+    $output = t('You do not have any administrative items.');
+  }
+  return $output;
 }
 function samultisite_permission(){
   return array(

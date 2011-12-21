@@ -10,6 +10,7 @@ By = Amit Kriplani
 At = A1Brains Infotech
 
 Updates:
-   18 December 2011: Created project page on my blog at http://blog.amitkriplani.com/p/samultisite.html
-   16 December 2011: Created add, edit and delete functions for managing sub sites. Pushed to Github. The repo is up to date.
-   16 December 2011: Started project. Shared on Github (https://github.com/amitkriplani/SAMultiSite).
+	20 December 2011: The site control panel is now showing dashboard for the selected site.
+	18 December 2011: Created project page on my blog at http://blog.amitkriplani.com/p/samultisite.html
+	16 December 2011: Created add, edit and delete functions for managing sub sites. Pushed to Github. The repo is up to date.
+	16 December 2011: Started project. Shared on Github (https://github.com/amitkriplani/SAMultiSite).
