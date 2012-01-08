@@ -41,7 +41,19 @@ function samultisite_menu(){
     'access arguments' => array('administer multiple sites'),
     'type' => MENU_CALLBACK,
   );  
+  $items['admin/samultisite/edit/%'] = array(
+    'page callback' => 'samultisite_edit',
+    'access arguments' => array('administer multiple sites'),
+    'type' => MENU_CALLBACK,
+  );  
   return $items;
+}
+function samultisite_edit(){
+  $base = str_replace("/index.php","",$_SERVER['PHP_SELF']);
+  $path = substr($_GET['q'],strpos($_GET['q'],$base)+strlen($base)+1);
+  $item = menu_get_item($path);
+  print $path;exit;
+  return menu_execute_active_handler($_GET['q'],false);
 }
 function samultisite_manage_site(){
   global $databases, $base_url;
@@ -50,16 +62,26 @@ function samultisite_manage_site(){
     $query->condition('site.sasid', arg(3), '=')
     	  ->fields('site');
     $result = @$query->execute()->fetchAssoc();
-	drupal_set_title($result['name']." control panel");
-	$path = str_replace("admin/samultisite/manage/".arg(3)."/","",$_GET['q']);
-    $item = menu_get_item($path);
+	drupal_set_title("Control panel for ".$result['name']);
+	$arg3 = arg(3);
+	$_GET['q'] = str_replace("admin/samultisite/manage/".arg(3)."/","",$_GET['q']);
+    $item = menu_get_item($_GET['q']);
+//	print_r($item);exit;
 	$func = $item['page_callback'];
-	$args = implode(",",$item['page_arguments']);
+//	$args = is_array($item['page_arguments']) ? $item['page_arguments'] : is_array(@unserialize($item['page_arguments'])) ? @unserialize($item['page_arguments']) : $item['page_arguments'];
+    $args = $item['page_arguments'];
+//	print_r($args);exit;
 	if (isset($item['include_file']) && $item['include_file'] != "") include_once($item['include_file']);
 	$databases['default']['default']['prefix'] = $result['prefix'];
 	Database::closeConnection();
 	Database::parseConnectionInfo();
-	return  $func($args);
+	$args[1] = (count($args) > 1) ? $args[1] : "";
+	$output = render($func($args[0],$args[1]));
+	$match = preg_match_all("/href=\"(.*)/i",$output,$matches);
+	foreach ($matches[1] as $match){
+		$output = str_replace(substr($match,0,strpos($match,'"')),$base_url."/admin/samultisite/edit/".$arg3.substr($match,0,strpos($match,'"')),$output);
+	}
+	return $output;
   }
   if (!arg(3)){
 	drupal_set_message("The site can not be found.");
@@ -67,14 +89,17 @@ function samultisite_manage_site(){
   }
   $query = db_select('samultisite_sites', 'site');
   $query->condition('site.sasid', arg(3), '=')
-    	->fields('site *')
+    	->fields('site')
 		;
-  $result = @$query->execute()->fetchObject();
-  drupal_set_title($result->name." control panel");
+  $result = $query->execute()->fetchObject();
+  drupal_set_title("Control panel for ".$result->name);
   if (is_object($result) && $result->sasid != arg(3)){
   	drupal_set_message("The site can not be found.");
 	drupal_goto("admin/samultisite");
   }
+  $databases['default']['default']['prefix'] = $result->prefix;
+  Database::closeConnection();
+  Database::parseConnectionInfo();
   $item = menu_get_item('admin');
   if ($content = system_admin_menu_block($item)) {
   	foreach ($content as &$value){
@@ -127,9 +152,9 @@ function samultisite_admin($arg = null) {
   }
 }
 function samultisite_load_site($sasid){
-  $query = db_select('samultisite_sites', 'site');
+  $query = db_select('samultisite_sites','site');
   $query->condition('site.sasid', $sasid, '=')
-        ->fields('site *')
+        ->fields('site')
 		;
   $result = $query->execute()->fetchObject();
   return $result;
